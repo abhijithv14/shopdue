@@ -1,0 +1,1 @@
+import "./globals.css"; export const metadata={title:"ShopDue",description:"Simple credit tracker for small shops"}; export default function RootLayout({children}:{children:React.ReactNode}){return <html lang="en"><body>{children}</body></html>}
