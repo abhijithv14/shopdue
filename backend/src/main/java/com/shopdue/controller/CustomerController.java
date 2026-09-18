@@ -8,6 +8,13 @@ public class CustomerController {
  @GetMapping public List<Customer> all(Authentication a){return customers.findByOwnerOrderByNameAsc(owner(a));}
  @PostMapping public ResponseEntity<Customer> create(@Valid @RequestBody Customer c,Authentication a){c.setOwner(owner(a));return ResponseEntity.status(HttpStatus.CREATED).body(customers.save(c));}
  @GetMapping("/{id}") public ResponseEntity<Customer> get(@PathVariable Long id,Authentication a){return customers.findByIdAndOwner(id,owner(a)).map(ResponseEntity::ok).orElse(ResponseEntity.notFound().build());}
- @DeleteMapping("/{id}") public ResponseEntity<Void> delete(@PathVariable Long id,Authentication a){var c=customers.findByIdAndOwner(id,owner(a));if(c.isEmpty())return ResponseEntity.notFound().build();customers.delete(c.get());return ResponseEntity.noContent().build();}
+ @PutMapping("/{id}") public ResponseEntity<?> update(@PathVariable Long id,@Valid @RequestBody Customer input,Authentication a){
+  var c=customers.findByIdAndOwner(id,owner(a)).orElse(null); if(c==null)return ResponseEntity.notFound().build();
+  c.setName(input.getName().trim()); c.setPhone(input.getPhone()); c.setAddress(input.getAddress()); return ResponseEntity.ok(customers.save(c));
+ }
+ @DeleteMapping("/{id}") public ResponseEntity<?> delete(@PathVariable Long id,Authentication a){
+  var c=customers.findByIdAndOwner(id,owner(a)).orElse(null); if(c==null)return ResponseEntity.notFound().build();
+  tx.deleteAll(tx.findByCustomerIdAndCustomerOwnerOrderByTransactionDateDesc(id,owner(a))); customers.delete(c); return ResponseEntity.noContent().build();
+ }
  @GetMapping("/{id}/transactions") public ResponseEntity<?> transactions(@PathVariable Long id,Authentication a){var o=owner(a);if(customers.findByIdAndOwner(id,o).isEmpty())return ResponseEntity.notFound().build();return ResponseEntity.ok(tx.findByCustomerIdAndCustomerOwnerOrderByTransactionDateDesc(id,o));}
 }
