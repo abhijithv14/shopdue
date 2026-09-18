@@ -1,0 +1,1 @@
+package com.shopdue.repository; import com.shopdue.model.Transaction; import org.springframework.data.jpa.repository.*; import java.util.*; public interface TransactionRepository extends JpaRepository<Transaction,Long>{ List<Transaction> findByCustomerIdOrderByTransactionDateDesc(Long customerId); }
