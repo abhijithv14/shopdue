@@ -1,0 +1,14 @@
+"use client";
+import {useEffect,useState} from "react"; import {apiJson,token} from "../../lib/api"; import {useRouter} from "next/navigation";
+type C={id:number,name:string,phone?:string}; type T={type:"CREDIT"|"PAYMENT",amount:number,transactionDate:string,dueDate?:string,note?:string};
+export default function Reports(){
+ const router=useRouter(); const[cs,setCs]=useState<C[]>([]),[rows,setRows]=useState<(C&{credit:number,paid:number,balance:number,overdue:number})[]>([]),[loading,setLoading]=useState(true);
+ useEffect(()=>{if(!token()){router.replace("/login");return}load()},[]);
+ async function load(){try{const customers=await apiJson<C[]>("/api/customers");setCs(customers);const now=new Date();const data=await Promise.all(customers.map(async c=>{const ts=await apiJson<T[]>(`/api/customers/${c.id}/transactions`);const credit=ts.filter(x=>x.type==="CREDIT").reduce((s,x)=>s+Number(x.amount),0);const paid=ts.filter(x=>x.type==="PAYMENT").reduce((s,x)=>s+Number(x.amount),0);const overdue=ts.filter(x=>x.type==="CREDIT"&&x.dueDate&&new Date(x.dueDate+"T23:59:59")<now).reduce((s,x)=>s+Number(x.amount),0);return {...c,credit,paid,balance:Math.max(0,credit-paid),overdue}}));setRows(data)}catch{}finally{setLoading(false)}}
+ const totalCredit=rows.reduce((s,x)=>s+x.credit,0),totalPaid=rows.reduce((s,x)=>s+x.paid,0),outstanding=Math.max(0,totalCredit-totalPaid),overdue=rows.reduce((s,x)=>s+x.overdue,0);
+ const money=(n:number)=>"₹"+n.toLocaleString("en-IN",{maximumFractionDigits:2});
+ return <main className="wrap"><div className="nav"><div><a href="/" className="muted">← Dashboard</a><div className="brand">Reports</div><div className="muted">Credit and payment overview</div></div></div>
+ {loading?<p className="muted">Loading report…</p>:<><section className="grid"><div className="card"><div className="muted">Customers</div><div className="value">{cs.length}</div></div><div className="card"><div className="muted">Total credit</div><div className="value">{money(totalCredit)}</div></div><div className="card"><div className="muted">Total paid</div><div className="value">{money(totalPaid)}</div></div><div className="card"><div className="muted">Outstanding</div><div className="value">{money(outstanding)}</div></div></section>
+ <section className="section card"><h2>Overdue</h2><div className="value">{money(overdue)}</div><p className="muted">Credit amounts past their due date.</p></section>
+ <section className="section card"><h2>Customer report</h2><table className="table"><thead><tr><th>Customer</th><th>Credit</th><th>Paid</th><th>Outstanding</th><th>Overdue</th></tr></thead><tbody>{rows.map(x=><tr key={x.id}><td><a href={"/customers/"+x.id}><b>{x.name}</b></a></td><td>{money(x.credit)}</td><td>{money(x.paid)}</td><td><b>{money(x.balance)}</b></td><td className={x.overdue?"dangerText":""}>{money(x.overdue)}</td></tr>)}</tbody></table>{!rows.length&&<p className="muted">No customers yet.</p>}</section></>}</main>
+}
