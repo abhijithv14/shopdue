@@ -1,1 +1,14 @@
-import type {NextConfig} from "next"; const nextConfig:NextConfig={}; export default nextConfig;
+import type {NextConfig} from "next";
+
+const nextConfig:NextConfig={
+  async rewrites(){
+    return [
+      {
+        source:"/backend/:path*",
+        destination:"https://shopdue-api.onrender.com/:path*",
+      },
+    ];
+  },
+};
+
+export default nextConfig;
